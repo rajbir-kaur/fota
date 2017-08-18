@@ -33,3 +33,8 @@ def humansize(nbytes):
 def getId(query):
     #query = genRes(query)
     return query['_id']['$oid']
+
+def clean(data):
+   for k,v in data.items():
+	data[k] = v.strip()
+   return data

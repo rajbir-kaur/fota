@@ -14,7 +14,7 @@ router.register("updateStatus", UpdateStatusView, base_name='update-status')
 
 urlpatterns=[
     url(r'',include(router.urls)),
-    #url(r'^partner/$', PartnerView.as_view()),
+    url(r'^device/$', DevicesView.as_view()),
     #url(r'^update/$', UpdateView.as_view()),
     #url(r'^partner/$', PartnerView.as_view({'post':'create'})),
 ]

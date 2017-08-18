@@ -34,7 +34,6 @@ class OemConfigView(viewsets.ModelViewSet):
     http_method_names = ['post','get','patch']
 
     def list(self, request):
-
 	logger.info("in device list oem config")
 	logger.info(self.request.query_params)
 	data = self.request.query_params.copy()
@@ -54,6 +53,10 @@ class OemConfigView(viewsets.ModelViewSet):
                 return Response({"Success"}, status=status.HTTP_201_CREATED)
         return Response({"Error!"}, status=status.HTTP_400_BAD_REQUEST)
 
+
+'''class SomeFilterset(Filterset):
+    CurrentBuildVersion = filters.CharFilter()
+     = filters.CharFilter('contains')'''
 
 class UpdateGenView(viewsets.ModelViewSet):
     """
@@ -83,7 +86,7 @@ class UpdateGenView(viewsets.ModelViewSet):
         data['Md5'] = md5(tmp_path)
         data['DownloadSize'] = humansize(file_obj.size)
         #url = "http://127.0.0.1:8000"+settings.MEDIA_URL+path
-        url = "http://"+settings.ALLOWED_HOSTS[0]+settings.MEDIA_URL+path
+        url = settings.MEDIA_URL+path
         data['DownloadUrl'] = url
         data.pop('File')
         x = OemConfig.objects(partnerName=data['partnerName']).first()
@@ -120,7 +123,7 @@ class DeviceRegisterView(viewsets.ModelViewSet):
         if not x: return Response({PNF}, status=status.HTTP_400_BAD_REQUEST)
         data['partnerName'] = x.id
         data['Token'] = uuid.uuid4().hex
-	data['CurrentBuildVersion']='Claymtion_Falcon__1501233644'
+	#data['CurrentBuildVersion']='Claymtion_Falcon__1501233644'
         fltr = DeviceRegister.objects(IMEI1=data['IMEI1'], IMEI2=data['IMEI2']).first()
         if fltr: return Response({"Token": getToken(fltr)})
         srl = DeviceRegisterSerializer(data=data)
@@ -139,6 +142,15 @@ class OemRegisterView(viewsets.ModelViewSet):
     permission_classes = (permissions.AllowAny,)
     queryset = OemRegister.objects
     http_method_names = ['get','post','patch']
+
+    def list(self, request):
+        data = self.request.query_params.copy()
+        if data and data['partnerName']:
+            logger.info(data['partnerName'])
+            config = OemRegister.objects(partnerName=data['partnerName'])
+            return Response(json.loads(genRes(config)[0]["DeviceModel"]), status=status.HTTP_200_OK)
+        else: return Response(genRes(self.queryset), status=status.HTTP_200_OK)
+        return Response({NDF}, status=status.HTTP_400_BAD_REQUEST)
 
     def create(self, request):
         data=request.data.copy()
@@ -211,19 +223,19 @@ class PushUpdatesView(viewsets.ModelViewSet):
         x = OemConfig.objects(partnerName=data['partnerName']).first()
         if not x: return Response({PNF}, status=status.HTTP_400_BAD_REQUEST)
         data['partnerName'] = x.id
+	
         #data['UpdateName'] = 'Update 1'
         up = UpdateGen.objects(UpdateName=data['UpdateName']).first()
         data['Date'] = up['Date']
-        y = {'Date': data['Date'], 'UpdateId': data['UpdateId']}
+        y = [{'Date': data['Date'], 'UpdateId': data['UpdateId']}]
         data.pop('UpdateName')
         data['UpdateId'] = getId(up)
-        data['type'] = "POP"
-        if data['type']=="POD":
+        #data['Type'] = "POP"
+        if 'IMEI1' in data.keys():
             device = DeviceRegister.objects(IMEI1=data['IMEI1'])
-            device.AvailableUpdates = [y]
+            device.AvailableUpdates = device.AvailableUpdates+y
             device.save()
-        elif data['type']=="POP":
-            data.pop('type')
+        else:
             srl = UpdateLogsSerializer(data=data)
             if srl.is_valid(raise_exception=True):
                 fltr = {'DeviceModel': data['DeviceModel'], 'partnerName': data['partnerName'], 
@@ -231,7 +243,7 @@ class PushUpdatesView(viewsets.ModelViewSet):
                 devices = DeviceRegister.objects(**fltr)
                 if devices:
                     for device in devices:  
-                        device.AvailableUpdates = [y]
+                        device.AvailableUpdates = device.AvailableUpdates+y
                         device.save()
                 srl.save()
             return Response({"Success"}, status=status.HTTP_200_OK)
@@ -246,40 +258,65 @@ class UpdateStatusView(viewsets.ModelViewSet):
     permission_classes = (permissions.AllowAny,)
     queryset = DeviceRegister.objects
     http_method_names = ['post']
+    parser_classes = (FormParser, MultiPartParser)
 
     def create(self, request):
+	logger.info(" in update status")
+	logger.info(request)
+	logger.info(request.data)
+	if request.data: logger.info(" in update status")
+	else: return Response({"Error!"}, status=status.HTTP_400_BAD_REQUEST)
+	logger.info("data: {}".format(request.data))
         data = request.data.copy()
+	data = clean(data)
 	logger.info(" in update status")
 	logger.info(data)
         x = OemConfig.objects(partnerName=data['partnerName']).first()
-        ftr = {'partnerName': x.id, 'IMEI1': data['IMEI1'], 
-                'CurrentBuildVersion': data['CurrentBuildVersion'], 
-                'UpdaterVersion': data['UpdaterVersion']}
-        row = DeviceRegister.objects.get(**fltr)
-        if row:
-	    logger.info(data['Status'])
-            row.OngoingUpdates[0]['Status'] = data['Status']
-	    if not row.DeviceStatus:
-		d = row.OngoingUpdates.copy()
-		y = {'Date': d['Date'], 'UpdateId': d['UpdateId'], 'Status': [data['Status']]}
-		row.DeviceStatus = y
-	    else:
-		for ds in row.DeviceStatus:
-		    if ds['UpdateId']==row.OngoingUpdates[0]['UpdateId']:
-			x = ds['Status']
-			x.append(data['Status'])
-			ds.Status = x
-            if data['Status']=='STATUS_INSTALL_COMPLETE':
-		
-                row.CompletedUpdates = row.CompletedUpdates + [row.OngoingUpdates[0].pop('Status')]
-                row.OngoingUpdates = []
-            elif data['Status'] in ['STATUS_FILE_DOWNLOADING_CANCEL', 'STATUS_FILE_DAMAGED', \
-                                'STATUS_INSTALL_CANCEL', 'STATUS_INSTALL_FAIL', 'STATUS_PACKAGE_VERIF_FAILED', \
-                                'STATUS_SHA1_VERIF_FAILED']:
-                y = row.AvailableUpdates
-                y.insert(0, row.OngoingUpdates[0].pop('Status'))
-                row.AvailableUpdates = y
-                row.OngoingUpdates = []
-            row.save()         
-            return Response({"Status": True}, status=status.HTTP_200_OK)
+	logger.info(x)
+	if x:
+        	fltr = {'partnerName': x.id, 'IMEI1': data['IMEI1'], 
+                	'CurrentBuildVersion': data['CurrentBuildVersion'], 
+                	'UpdaterVersion': data['UpdaterVersion']}
+		logger.info(fltr)
+        	row = DeviceRegister.objects(**fltr).first();logger.info(row)
+	        if row:
+		    logger.info(data['Status']);logger.info(genRes(row))
+	            row.OngoingUpdates[0]['Status'] = data['Status']
+		    if not row.DeviceStatus:
+			d = row.OngoingUpdates[0]
+			y = {'Date': d['Date'], 'UpdateId': d['UpdateId'], 'Status': [data['Status']]}
+			row.DeviceStatus = [y]
+		    else:
+			flg=0
+			for ds in row.DeviceStatus:
+			    if ds['UpdateId']==row.OngoingUpdates[0]['UpdateId']:
+				x = ds['Status']
+				x.append(data['Status'])
+				ds.Status = x
+				flg=1
+			if flg==0:
+			    d = row.OngoingUpdates
+                            y = {'Date': d['Date'], 'UpdateId': d['UpdateId'], 'Status': [data['Status']]}
+                            row.DeviceStatus = [y]
+	            if data['Status']=='install_complete':
+                	row.CompletedUpdates = row.CompletedUpdates + [row.OngoingUpdates[0].pop('Status')]
+	                row.OngoingUpdates = []
+        	    #elif data['Status'] in ['', 'STATUS_FILE_DAMAGED', \
+               	    # 	                'STATUS_INSTALL_CANCEL', 'STATUS_INSTALL_FAIL', 'STATUS_PACKAGE_VERIF_FAILED', \
+                    #    	        'STATUS_SHA1_VERIF_FAILED']:
+		    '''else:
+	                y = row.AvailableUpdates
+        	        y.insert(0, row.OngoingUpdates[0].pop('Status'))
+                	row.AvailableUpdates = y
+	                row.OngoingUpdates = []'''
+        	    row.save()         
+            	return Response({"Status": True}, status=status.HTTP_200_OK)
         return Response({"Status": False}, status=status.HTTP_400_BAD_REQUEST)
+
+def getList(VAR):
+  return [y for y in VAR]
+
+class DevicesView(APIView):
+    permission_classes = (permissions.AllowAny,)
+    def get(self, request):
+        return Response(getList(DEVICES))
