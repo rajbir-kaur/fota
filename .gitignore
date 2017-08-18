@@ -1,0 +1,6 @@
+*.pyc
+*.csv
+uploaded_media
+*.log
+*.sqlite3
+fota_app/migrations

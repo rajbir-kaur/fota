@@ -1,0 +1,10 @@
+--upgrade setuptools
+ez_setup
+django
+djangorestframework
+django-rest-swagger
+pymongo
+celery
+django-rest-framework-mongoengine
+mongoengine
+django-celery
