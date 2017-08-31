@@ -7,10 +7,9 @@ from .models import *
 from rest_framework import serializers
 import hashlib
 
-
-class OemConfigSerializer(DocumentSerializer):
+class PartnerRegisterSerializer(DocumentSerializer):
     class Meta:
-        model = OemConfig
+        model = PartnerRegister
         fields = '__all__'
 
 class UpdateGenSerializer(DocumentSerializer):
@@ -23,9 +22,9 @@ class DeviceRegisterSerializer(DocumentSerializer):
         model = DeviceRegister
         fields = '__all__'
 
-class OemRegisterSerializer(DocumentSerializer):
+class ModelRegisterSerializer(DocumentSerializer):
     class Meta:
-        model = OemRegister
+        model = ModelRegister
         fields = '__all__'
 
 class UpdateLogsSerializer(DocumentSerializer):

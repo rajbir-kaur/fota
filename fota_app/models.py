@@ -8,12 +8,12 @@ from datetime import datetime as dt
 DEVICES= ('Phone', 'TV', 'Auto', 'Wear')
 
 # Create your models here.
-class OemConfig(Document):
+class PartnerRegister(Document):
     partnerName = fields.StringField(unique=True)
     config = fields.StringField()
 
 class DeviceRegister(Document):
-    partnerName = fields.ReferenceField(OemConfig, dbref=True, required=True)
+    partnerName = fields.ReferenceField(PartnerRegister, dbref=True, required=True)
     Token = fields.UUIDField(unique=True)
     IMEI1 = fields.StringField(unique=True, required=True)
     IMEI2 = fields.StringField(unique=True, required=True)
@@ -31,7 +31,7 @@ class DeviceRegister(Document):
 
 class UpdateGen(Document):
     UpdateName = fields.StringField()
-    partnerName = fields.ReferenceField(OemConfig, dbref=True, required=True)
+    partnerName = fields.ReferenceField(PartnerRegister, dbref=True, required=True)
     AvailVersion = fields.StringField()
     BaseVersion = fields.StringField()
     ChangeLog = fields.StringField()
@@ -44,14 +44,14 @@ class UpdateGen(Document):
     DownloadUrl = fields.StringField() 
     Date = fields.DateTimeField(default=dt.now())
 
-class OemRegister(Document):
-    partnerName = fields.ReferenceField(OemConfig, dbref=True, required=True)
+class ModelRegister(Document):
+    partnerName = fields.ReferenceField(PartnerRegister, dbref=True, required=True)
     DeviceModel = fields.StringField()
-    Token = fields.UUIDField(unique=True) 
+    #Token = fields.UUIDField(unique=True) 
+    Token = fields.StringField()
 
 class UpdateLogs(Document):
     UpdateId = fields.ReferenceField(UpdateGen, dbref=True, required=True)
     Date = fields.DateTimeField()
     DeviceModel = fields.StringField()
-    partnerName = fields.ReferenceField(OemConfig, dbref=True, required=True)
-    CurrentBuildVersion = fields.StringField() 
+    partnerName = fields.ReferenceField(PartnerRegister, dbref=True, required=True)

@@ -6,7 +6,7 @@ import json
 
 @task
 def update_last_ping(data):
-    device = DeviceM.objects.get(id=data['_id']['$oid'])
+    device = DeviceRegister.objects.get(id=data['_id']['$oid'])
     device.lastPingTimestamp = dt.now()
     device.save()
     return None

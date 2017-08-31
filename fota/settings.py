@@ -28,7 +28,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = 'g57wl72oz0#os9e$!ylacrp_#%adlr(i(*)43jy=l6f777q0bx'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ['devfota.gammo.me']
 
@@ -91,7 +91,7 @@ REST_FRAMEWORK = {
 
 WSGI_APPLICATION = 'fota.wsgi.application'
 
-
+FILE_UPLOAD_MAX_MEMORY_SIZE = 52428800
 # Database
 # https://docs.djangoproject.com/en/1.11/ref/settings/#databases
 

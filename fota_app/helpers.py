@@ -1,5 +1,8 @@
 import hashlib
 import json
+from .models import *
+import logging
+logger = logging.getLogger("fota")
 
 def genRes(query):
     print 'gen res', query
@@ -38,3 +41,42 @@ def clean(data):
    for k,v in data.items():
 	data[k] = v.strip()
    return data
+
+def getFilters(data):
+    d = {}
+    for k,v in data.items():
+    	d[k]=v
+    return d
+
+def cln(data):    
+    logger.info("\n\n in cln \n\n")
+    logger.info(data)
+    if data and len(data)>0:
+       	dk=[]
+	for da in data:
+	    logger.info(da)
+	    d={}
+    	    for k,v in da.items():
+            	logger.info(k);logger.info(type(v))
+	    	if 'dict' in str(type(v)) and "$id" in v.keys(): logger.info(v.keys())
+	    	if k=="partnerName" and ("dict" in str(type(v)) and "$id" in v.keys()):
+        	    #logger.info(PartnerRegister.objects(id=v['$id']['$oid']).first().partnerName)
+    	            d['partnerName'] = PartnerRegister.objects(id=v['$id']['$oid']).first().partnerName
+            	elif k=="DeviceModel" and ("dict" in str(type(v)) and "$id" in v.keys()):
+		    #logger.info(ModelRegister.objects(id=v['$id']['$oid']).first().DeviceModel)
+	            d['DeviceModel'] = ModelRegister.objects(id=v['$id']['$oid']).first().DeviceModel
+	    	#elif k=="Token": pass
+	    	elif k=="_id": d["id"] = v["$oid"]
+	   	else:
+		    d[k]=v
+	    dk.append(d)
+	logger.info(dk)
+	return dk
+    return data
+
+def case_insensitive(data):
+    logger.info(data)
+    d={}
+    for k,v in data.items():
+	d[k] = v.lower()
+    return d
