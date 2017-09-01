@@ -28,6 +28,12 @@ class DeviceRegister(Document):
     CompletedUpdates = fields.ListField()
     OngoingUpdates = fields.ListField()
     DeviceStatus = fields.ListField()
+    DeviceID = fields.StringField()
+    DeviceType = fields.StringField()
+    BuildDate = fields.StringField()
+    Platform = fields.StringField()
+    Oem = fields.StringField()
+    Device = fields.StringField()
 
 class UpdateGen(Document):
     UpdateName = fields.StringField()
@@ -46,7 +52,7 @@ class UpdateGen(Document):
 
 class ModelRegister(Document):
     partnerName = fields.ReferenceField(PartnerRegister, dbref=True, required=True)
-    DeviceModel = fields.StringField()
+    DeviceModel = fields.StringField(unique=True)
     #Token = fields.UUIDField(unique=True) 
     Token = fields.StringField()
 

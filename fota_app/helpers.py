@@ -37,8 +37,11 @@ def getId(query):
     #query = genRes(query)
     return query['_id']['$oid']
 
+hkey = {'ro.fota.platform':'Platform','ro.build.date.utc':'BuildDate','ro.fota.oem':'Oem','ro.fota.type':'DeviceType', 'ro.fota.device':'Device'}
 def clean(data):
    for k,v in data.items():
+	if k in hkey.keys():
+      	    k = hkey[k]
 	data[k] = v.strip()
    return data
 
@@ -49,28 +52,31 @@ def getFilters(data):
     return d
 
 def cln(data):    
-    logger.info("\n\n in cln \n\n")
-    logger.info(data)
+    logger.info("in cln")
+    #logger.info(data)
     if data and len(data)>0:
        	dk=[]
 	for da in data:
-	    logger.info(da)
 	    d={}
     	    for k,v in da.items():
-            	logger.info(k);logger.info(type(v))
-	    	if 'dict' in str(type(v)) and "$id" in v.keys(): logger.info(v.keys())
+	    	#if 'dict' in str(type(v)) and "$id" in v.keys(): logger.info(v.keys())
 	    	if k=="partnerName" and ("dict" in str(type(v)) and "$id" in v.keys()):
-        	    #logger.info(PartnerRegister.objects(id=v['$id']['$oid']).first().partnerName)
     	            d['partnerName'] = PartnerRegister.objects(id=v['$id']['$oid']).first().partnerName
             	elif k=="DeviceModel" and ("dict" in str(type(v)) and "$id" in v.keys()):
-		    #logger.info(ModelRegister.objects(id=v['$id']['$oid']).first().DeviceModel)
 	            d['DeviceModel'] = ModelRegister.objects(id=v['$id']['$oid']).first().DeviceModel
-	    	#elif k=="Token": pass
+		elif k=="ActivationDate" and ("dict" in str(type(v)) and "$date" in v.keys()):
+		    d["ActivationDate"] = v["$date"]
+		    '''elif k=="OngoingUpdates":
+		    if not v: d[k]=v
+		    else:
+			for on in d["OngoingUpdates"]:
+			    for x,y in on.items():pass'''
+		    
+	    	elif k=="Token": pass
 	    	elif k=="_id": d["id"] = v["$oid"]
 	   	else:
 		    d[k]=v
 	    dk.append(d)
-	logger.info(dk)
 	return dk
     return data
 

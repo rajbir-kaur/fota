@@ -73,7 +73,7 @@ class PartnerRegisterView(viewsets.ModelViewSet):
             return Response(serializer.data)
 
     def update(self, request, id=None):
-        logger.info("\nin update\n")
+        logger.info("in update")
         serializer = self.serializer_class(data=request.data, partial=True)
         if serializer.is_valid(raise_exception=True):
             serializer.save()
@@ -135,7 +135,7 @@ class UpdateGenView(viewsets.ModelViewSet):
 
     def update(self, request, id=None):
 	print 'in update'
-        logger.info("\nin update\n")
+        logger.info("in update")
 	row = UpdateGen.objects(id=id).first();logger.info(row)
 	data = request.data
 	file_obj = data['File']
@@ -179,7 +179,7 @@ class DeviceRegisterView(viewsets.ModelViewSet):
 
     def create(self, request):
 	logger.info(request.data.copy())
-        data = cln([request.data.copy()])[0]
+        data = clean(request.data.copy())
 	logger.info("in device register")
 	logger.info(data)
         x = PartnerRegister.objects(partnerName=data['partnerName'].lower()).first()
@@ -191,6 +191,10 @@ class DeviceRegisterView(viewsets.ModelViewSet):
         if fltr: 
 	    if not fltr.CurrentBuildVersion==data['CurrentBuildVersion']:
 		fltr.CurrentBuildVersion=data['CurrentBuildVersion']
+		fltr.AvailableUpdates=[]
+		fltr.CompletedUpdates=[]
+		fltr.OngoingUpdates=[]
+		fltr.DeviceStatus=[]
 		fltr.save()
 	    return Response({"Token": getToken(fltr)})
         srl = self.serializer_class(data=data)
@@ -225,7 +229,6 @@ class ModelRegisterView(viewsets.ModelViewSet):
         x = PartnerRegister.objects(partnerName=data['partnerName'].lower()).first()
         if not x: return Response({PNF}, status=status.HTTP_400_BAD_REQUEST)
         data['partnerName'] = x.id
-        #data['Token'] = binascii.hexlify(os.urandom(20)).decode()
         data['Token'] = uuid.uuid4().hex
 	if data["DeviceModel"]=="LionX1+":
 	    data['Token'] = 'fb4587e6a599a968a621f418afbb17a2d1e4c527'
@@ -245,7 +248,7 @@ class ModelRegisterView(viewsets.ModelViewSet):
             return Response(serializer.data)
 
     def update(self, request, id=None):
-        logger.info("\nin update\n")
+        logger.info("in update")
         serializer = self.serializer_class(data=request.data, partial=True)
         serializer.save()
         if serializer.is_valid(raise_exception=True):
@@ -267,7 +270,9 @@ class CheckUpdateView(viewsets.ModelViewSet):
 	logger.info("in check update")
 	logger.info(d)
         #d={'IMEI1': 'imei1', 'IMEI2': 'imei2'}
+	#test="911150100511204"
         device = DeviceRegister.objects(IMEI1=d['IMEI1']).first();logger.info(device)
+	#device = DeviceRegister.objects(IMEI1=test).first();logger.info(device)
         if device:
 	    logger.info(genRes(device));logger.info("in chk update")
 	    logger.info(device.partnerName)
@@ -275,7 +280,7 @@ class CheckUpdateView(viewsets.ModelViewSet):
             updates = UpdateGen.objects(**fltr);logger.info(updates)
             dtoken = getToken(device)
             if updates:
-		fltr.pop('BaseVersion')	
+		fltr.pop('BaseVersion')	;logger.info(fltr)
                 oem = ModelRegister.objects(**fltr).first();logger.info(oem)
                 if oem:
                     #otoken = getToken(oem)
